@@ -10,7 +10,12 @@
   "watchapp": {
     "watchface": false
   },
-  "appKeys": {},
+  "appKeys": {
+    "accel_x": 1,
+    "accel_y": 2,
+    "accel_z": 3,
+    "compass": 4
+  },
   "resources": {
     "media": []
   }

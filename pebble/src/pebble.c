@@ -1,43 +1,30 @@
 #include <pebble.h>
 
-#define ACCEL_STEP_MS 50
-
+#define ACCEL_STEP_MS 100
 
 static Window *window;
 static TextLayer *text_layer;
 
-static char s_text_buf[64];
-static bool compass_calibrated;
-
-static void compass_heading_handler(CompassHeadingData heading_data) {
-  switch (heading_data.compass_status) {
-    case CompassStatusDataInvalid:
-      snprintf(s_text_buf, sizeof(s_text_buf), "%s", "Compass is calibrating!\n\nMove your arm to aid calibration.");
-      break;
-    case CompassStatusCalibrating:
-      snprintf(s_text_buf, sizeof(s_text_buf), "%s", "Fine tuning...");
-      break;
-    case CompassStatusCalibrated:
-      snprintf(s_text_buf, sizeof(s_text_buf), "%d", ((int)heading_data.true_heading));
-
-      break;
-  }
-  text_layer_set_text(text_layer, s_text_buf);
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
 }
 
-static void accel_callback(AccelData *data, uint32_t num_samples) {
-  if (compass_calibrated) {
-    AccelData accel = data[num_samples - 1];
+static void timer_callback(void *data) {
+  AccelData accel = (AccelData) { .x = 0, .y = 0, .z = 0 };
+  accel_service_peek(&accel);
 
-    snprintf(s_text_buf, sizeof(s_text_buf),
-        "X: %d\nY: %d\nZ: %d",
-        accel.x,
-        accel.y,
-        accel.z
-      );
+  CompassHeadingData compass;
+  compass_service_peek(&compass);
 
-    text_layer_set_text(text_layer, s_text_buf);
-  };
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+  dict_write_int(iter, 1, &(accel.x), sizeof(int), true);
+  dict_write_int(iter, 2, &(accel.y), sizeof(int), true);
+  dict_write_int(iter, 3, &(accel.z), sizeof(int), true);
+  dict_write_int(iter, 4, &(compass.true_heading), sizeof(int), true);
+  app_message_outbox_send();
+
+  app_timer_register(ACCEL_STEP_MS, timer_callback, NULL);
 }
 
 static void window_load(Window *window) {
@@ -56,6 +43,9 @@ static void window_unload(Window *window) {
 }
 
 static void init(void) {
+  app_message_register_outbox_failed(outbox_failed_callback);
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+
   window = window_create();
   window_set_window_handlers(window, (WindowHandlers) {
     .load = window_load,
@@ -64,15 +54,11 @@ static void init(void) {
   const bool animated = true;
   window_stack_push(window, animated);
 
-  compass_calibrated = false;
-  accel_data_service_subscribe(1, &accel_callback);
-  compass_service_subscribe(&compass_heading_handler);
+  app_timer_register(ACCEL_STEP_MS, timer_callback, NULL);
 }
 
 static void deinit(void) {
   window_destroy(window);
-  accel_data_service_unsubscribe();
-  compass_service_unsubscribe();
 }
 
 int main(void) {
