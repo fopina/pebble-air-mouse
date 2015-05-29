@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import argparse
-import random
 import cherrypy
 
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
-from ws4py.messaging import TextMessage
 
 
 class AirMouseWebSocketHandler(WebSocket):
