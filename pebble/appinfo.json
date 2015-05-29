@@ -1,17 +1,16 @@
 {
   "uuid": "0e4ebbb0-3302-403c-a38d-697351d24972",
-  "shortName": "pebble",
-  "longName": "pebble",
-  "companyName": "MakeAwesomeHappen",
-  "versionLabel": "1.0",
+  "shortName": "AirMouse",
+  "longName": "Pebble Air Mouse",
+  "companyName": "skmobi",
+  "versionLabel": "0.1",
+  "versionCode": 1,
   "sdkVersion": "3",
   "targetPlatforms": ["aplite", "basalt"],
   "watchapp": {
     "watchface": false
   },
-  "appKeys": {
-    "dummy": 0
-  },
+  "appKeys": {},
   "resources": {
     "media": []
   }

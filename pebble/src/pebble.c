@@ -6,17 +6,38 @@
 static Window *window;
 static TextLayer *text_layer;
 
-static void accel_callback(AccelData *data, uint32_t num_samples) {
-  AccelData accel = data[num_samples - 1];
-  static char s_text_buf[32];
-  snprintf(s_text_buf, sizeof(s_text_buf),
-      "X: %d\nY: %d\nZ: %d",
-      accel.x,
-      accel.y,
-      accel.z
-    );
+static char s_text_buf[64];
+static bool compass_calibrated;
 
+static void compass_heading_handler(CompassHeadingData heading_data) {
+  switch (heading_data.compass_status) {
+    case CompassStatusDataInvalid:
+      snprintf(s_text_buf, sizeof(s_text_buf), "%s", "Compass is calibrating!\n\nMove your arm to aid calibration.");
+      break;
+    case CompassStatusCalibrating:
+      snprintf(s_text_buf, sizeof(s_text_buf), "%s", "Fine tuning...");
+      break;
+    case CompassStatusCalibrated:
+      snprintf(s_text_buf, sizeof(s_text_buf), "%d", ((int)heading_data.true_heading));
+
+      break;
+  }
   text_layer_set_text(text_layer, s_text_buf);
+}
+
+static void accel_callback(AccelData *data, uint32_t num_samples) {
+  if (compass_calibrated) {
+    AccelData accel = data[num_samples - 1];
+
+    snprintf(s_text_buf, sizeof(s_text_buf),
+        "X: %d\nY: %d\nZ: %d",
+        accel.x,
+        accel.y,
+        accel.z
+      );
+
+    text_layer_set_text(text_layer, s_text_buf);
+  };
 }
 
 static void window_load(Window *window) {
@@ -43,12 +64,15 @@ static void init(void) {
   const bool animated = true;
   window_stack_push(window, animated);
 
-  accel_data_service_subscribe(1, accel_callback);
+  compass_calibrated = false;
+  accel_data_service_subscribe(1, &accel_callback);
+  compass_service_subscribe(&compass_heading_handler);
 }
 
 static void deinit(void) {
   window_destroy(window);
   accel_data_service_unsubscribe();
+  compass_service_unsubscribe();
 }
 
 int main(void) {
