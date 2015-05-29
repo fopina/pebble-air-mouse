@@ -6,30 +6,27 @@
 static Window *window;
 static TextLayer *text_layer;
 
-static void timer_callback(void *data) {
-  AccelData accel = (AccelData) { .x = 0, .y = 0, .z = 0 };
-  accel_service_peek(&accel);
-
+static void accel_callback(AccelData *data, uint32_t num_samples) {
+  AccelData accel = data[num_samples - 1];
   static char s_text_buf[32];
   snprintf(s_text_buf, sizeof(s_text_buf),
-      "%d, %d, %d",
+      "X: %d\nY: %d\nZ: %d",
       accel.x,
       accel.y,
       accel.z
     );
-    
-  text_layer_set_text(text_layer, s_text_buf);
 
-  app_timer_register(ACCEL_STEP_MS, timer_callback, NULL);
+  text_layer_set_text(text_layer, s_text_buf);
 }
 
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
-  text_layer = text_layer_create((GRect) { .origin = { 0, 72 }, .size = { bounds.size.w, 20 } });
-  text_layer_set_text(text_layer, "Tilt me");
-  text_layer_set_text_alignment(text_layer, GTextAlignmentCenter);
+  text_layer = text_layer_create(GRect(5, 0, bounds.size.w - 10, bounds.size.h));
+  text_layer_set_text(text_layer, "No data yet");
+  text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
+  text_layer_set_overflow_mode(text_layer, GTextOverflowModeWordWrap);
   layer_add_child(window_layer, text_layer_get_layer(text_layer));
 }
 
@@ -46,13 +43,12 @@ static void init(void) {
   const bool animated = true;
   window_stack_push(window, animated);
 
-  accel_data_service_subscribe(0, NULL);
-
-  app_timer_register(ACCEL_STEP_MS, timer_callback, NULL);
+  accel_data_service_subscribe(1, accel_callback);
 }
 
 static void deinit(void) {
   window_destroy(window);
+  accel_data_service_unsubscribe();
 }
 
 int main(void) {
