@@ -25,7 +25,7 @@ static void window_load(Window *window) {
 
   text_layer = text_layer_create(GRect(5, 0, bounds.size.w - 10, bounds.size.h));
   text_layer_set_text(text_layer, "No data yet");
-  text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
+  text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   text_layer_set_overflow_mode(text_layer, GTextOverflowModeWordWrap);
   layer_add_child(window_layer, text_layer_get_layer(text_layer));
 }
